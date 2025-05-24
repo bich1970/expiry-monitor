@@ -4,7 +4,7 @@ from io import BytesIO
 from decouple import config
 
 # Reads a single Excel file from S3 bucket
-def read_s3_excel(file_key):
+def read_s3_excel(file_key, nrows=None):
     s3 = boto3.client(
         's3',
         aws_access_key_id=config('AWS_ACCESS_KEY_ID'),
@@ -12,8 +12,16 @@ def read_s3_excel(file_key):
         region_name=config('AWS_S3_REGION_NAME')
     )
     try:
+        print(f"Reading file from S3: {file_key}")
         obj = s3.get_object(Bucket=config('AWS_STORAGE_BUCKET_NAME'), Key='uploads/' + file_key)
-        return pd.read_excel(BytesIO(obj['Body'].read()))
+        df = pd.read_excel(
+            BytesIO(obj['Body'].read()),
+            engine='openpyxl',
+            sheet_name=0,
+            nrows=nrows  # Remove or adjust for production
+        )
+        print(f"{file_key} loaded. Shape: {df.shape}")
+        return df
     except s3.exceptions.NoSuchKey:
         raise FileNotFoundError(f"The file {file_key} was not found in S3.")
     except Exception as e:
@@ -25,7 +33,7 @@ def process_all_data():
         near_expiry = read_s3_excel('6_month_Near_expiry.xlsx')
         master = read_s3_excel('master.xlsx')
 
-        # Clean master file: Ensure numeric and drop rows with invalid values
+        # Clean master file
         master['CONVERSION_FACTOR'] = pd.to_numeric(master['CONVERSION_FACTOR'], errors='coerce')
         master = master.dropna(subset=['CONVERSION_FACTOR'])
 
@@ -45,4 +53,5 @@ def process_all_data():
         return {'summary_table': summary.to_html(classes="table table-bordered")}
     
     except Exception as e:
+        print(f"Dashboard processing error: {e}")
         return {'summary_table': f'<p style="color:red">Dashboard error: {str(e)}</p>'}
