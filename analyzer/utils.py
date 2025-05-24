@@ -25,14 +25,24 @@ def process_all_data():
         near_expiry = read_s3_excel('6_month_Near_expiry.xlsx')
         master = read_s3_excel('master.xlsx')
 
+        # Clean master file: Ensure numeric and drop rows with invalid values
+        master['CONVERSION_FACTOR'] = pd.to_numeric(master['CONVERSION_FACTOR'], errors='coerce')
+        master = master.dropna(subset=['CONVERSION_FACTOR'])
+
+        # Extract relevant columns
         master_subset = master[['ITEM_CODE', 'GENERIC_NAME', 'CONVERSION_FACTOR', 'OP_UNIT']]
         near_expiry = near_expiry.rename(columns={'ITEM_NUMBER': 'ITEM_CODE'})
 
+        # Merge datasets
         merged = pd.merge(near_expiry, master_subset, on='ITEM_CODE', how='left')
+
+        if 'CATEGORY_NAME' not in merged.columns:
+            raise KeyError("CATEGORY_NAME column not found in merged data.")
+
+        # Group summary
         summary = merged.groupby('CATEGORY_NAME').size().reset_index(name='count')
 
         return {'summary_table': summary.to_html(classes="table table-bordered")}
     
     except Exception as e:
         return {'summary_table': f'<p style="color:red">Dashboard error: {str(e)}</p>'}
-
