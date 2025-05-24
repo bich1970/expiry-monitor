@@ -1,5 +1,4 @@
 .env
-expiry_monitor/settings.py
 *.pyc
 __pycache__/
 
