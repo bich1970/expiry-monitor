@@ -23,7 +23,7 @@ def read_s3_excel(file_key):
 def process_all_data():
     try:
         near_expiry = read_s3_excel('6_month_Near_expiry.xlsx')
-        master = read_s3_excel('master.xls')
+        master = read_s3_excel('master.xlsx')
 
         master_subset = master[['ITEM_CODE', 'GENERIC_NAME', 'CONVERSION_FACTOR', 'OP_UNIT']]
         near_expiry = near_expiry.rename(columns={'ITEM_NUMBER': 'ITEM_CODE'})
