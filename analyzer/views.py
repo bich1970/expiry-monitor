@@ -16,5 +16,13 @@ def upload_file(request):
     return render(request, 'upload.html', {'form': form})
 
 def dashboard(request):
-    context = process_all_data()
+    try:
+        context = process_all_data()
+        if 'summary_table' not in context:
+            context['summary_table'] = "<p style='color:red;'>No data available.</p>"
+    except Exception as e:
+        context = {
+            'summary_table': f"<p style='color:red;'>Dashboard error: {str(e)}</p>"
+        }
     return render(request, 'dashboard.html', context)
+
